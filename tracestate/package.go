@@ -7,10 +7,6 @@ import (
 	"strings"
 )
 
-const (
-	MaxMembers = 32
-)
-
 var (
 	ErrInvalidListMember      = errors.New("tracecontext: Invalid tracestate list member")
 	ErrDuplicateListMemberKey = errors.New("tracecontext: Duplicate list member key in tracestate")
@@ -18,6 +14,8 @@ var (
 )
 
 const (
+	maxMembers = 32
+
 	delimiter = ","
 )
 
@@ -81,7 +79,7 @@ func parse(traceState string) (ts TraceState, err error) {
 
 		ts = append(ts, m)
 
-		if len(ts) > MaxMembers {
+		if len(ts) > maxMembers {
 			err = ErrTooManyListMembers
 			return
 		}
