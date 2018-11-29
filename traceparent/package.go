@@ -9,14 +9,21 @@ import (
 )
 
 const (
+	// Version represents the maximum `traceparent` header version that is fully supported.
+	// The library attempts optimistic forwards compatibility with higher versions.
 	Version = 0
 )
 
 var (
-	ErrInvalidFormat  = errors.New("tracecontext: Invalid traceparent format")
+	// ErrInvalidFormat occurs when the format is invalid, such as if there are missing characters
+	// or a field contains an unexpected character set.
+	ErrInvalidFormat = errors.New("tracecontext: Invalid traceparent format")
+	// ErrInvalidVersion occurs when the encoded version is invalid, i.e., is 255.
 	ErrInvalidVersion = errors.New("tracecontext: Invalid traceparent version")
+	// ErrInvalidTraceID occurs when the encoded trace ID is invalid, i.e., all bytes are 0
 	ErrInvalidTraceID = errors.New("tracecontext: Invalid traceparent trace ID")
-	ErrInvalidSpanID  = errors.New("tracecontext: Invalid traceparent span ID")
+	// ErrInvalidSpanID occurs when the encoded span ID is invalid, i.e., all bytes are 0
+	ErrInvalidSpanID = errors.New("tracecontext: Invalid traceparent span ID")
 )
 
 const (
@@ -35,10 +42,15 @@ var (
 	invalidSpanIDAllZeroes  = make([]byte, numSpanIDBytes, numSpanIDBytes)
 )
 
+// Flags contain recommendations from the caller relevant to the whole trace, e.g., for sampling.
 type Flags struct {
+	// Recorded indicates that at least one span in the trace may have been recorded.
+	// Tracing systems are advised to record all new spans in recorded traces, as incomplete traces may lead to
+	// a degraded tracing experience.
 	Recorded bool
 }
 
+// String encodes the Flags in an 8-bit field.
 func (f Flags) String() string {
 	var flags [1]byte
 	if f.Recorded {
@@ -47,21 +59,37 @@ func (f Flags) String() string {
 	return fmt.Sprintf("%02x", flags)
 }
 
+// TraceParent indicates information about a span and the trace of which it is part,
+// so that child spans started in the same trace may propagate necessary data and share relevant behaviour.
 type TraceParent struct {
+	// Version represents the version used to encode the `TraceParent`.
+	// Typically, this is the minimum of this library's supported version and the version of the header from which the `TraceParent` was decoded.
 	Version uint8
+	// TraceID is the trace ID of the whole trace, and should be constant across all spans in a given trace.
+	// A `TraceID` that contains only 0 bytes should be treated as invalid.
 	TraceID [16]byte
-	SpanID  [8]byte
-	Flags   Flags
+	// SpanID is the span ID of the span from which the `TraceParent` was derived, i.e., the parent of the next span that will be started.
+	// Span IDs should be unique within a given trace.
+	// A `TraceID` that contains only 0 bytes should be treated as invalid.
+	SpanID [8]byte
+	// Flags indicate behaviour that is recommended when handling new spans.
+	Flags Flags
 }
 
+// String encodes the `TraceParent` into a string formatted according to the W3C spec.
+// The string may be invalid if any fields are invalid, e.g., if the `TraceID` contains only 0 bytes.
 func (tp TraceParent) String() string {
 	return fmt.Sprintf("%02x-%032x-%016x-%s", tp.Version, tp.TraceID, tp.SpanID, tp.Flags)
 }
 
+// Parse attempts to decode a `TraceParent` from a byte array.
+// It returns an error if the byte array is incorrectly formatted or otherwise invalid.
 func Parse(b []byte) (TraceParent, error) {
 	return parse(b)
 }
 
+// ParseString attempts to decode a `TraceParent` from a string.
+// It returns an error if the string is incorrectly formatted or otherwise invalid.
 func ParseString(s string) (TraceParent, error) {
 	return parse([]byte(s))
 }

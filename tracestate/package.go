@@ -8,9 +8,12 @@ import (
 )
 
 var (
-	ErrInvalidListMember      = errors.New("tracecontext: Invalid tracestate list member")
+	// ErrInvalidListMember occurs if at least one list member is invalid, e.g., contains an unexpected character.
+	ErrInvalidListMember = errors.New("tracecontext: Invalid tracestate list member")
+	// ErrDuplicateListMemberKey occurs if at least two list members contain the same vendor-tenant pair.
 	ErrDuplicateListMemberKey = errors.New("tracecontext: Duplicate list member key in tracestate")
-	ErrTooManyListMembers     = errors.New("tracecontext: Too many list members in tracestate")
+	// ErrTooManyListMembers occurs if the list contains more than the maximum number of members per the spec, i.e., 32.
+	ErrTooManyListMembers = errors.New("tracecontext: Too many list members in tracestate")
 )
 
 const (
@@ -23,12 +26,18 @@ var (
 	re = regexp.MustCompile(`^\s*(?:([a-z0-9_\-*/]{1,241})@([a-z0-9_\-*/]{1,14})|([a-z0-9_\-*/]{1,256}))=([\x20-\x2b\x2d-\x3c\x3e-\x7e]*[\x21-\x2b\x2d-\x3c\x3e-\x7e])\s*$`)
 )
 
+// Member contains vendor-specific data that should be propagated across all new spans started within a given trace.
 type Member struct {
+	// Vendor is a key representing a particular trace vendor.
 	Vendor string
+	// Tenant is a key used to distinguish between tenants of a multi-tenant trace vendor.
 	Tenant string
-	Value  string
+	// Value is the particular data that the vendor intents to pass to child spans.
+	Value string
 }
 
+// String encodes a `Member` into a string formatted according to the W3C spec.
+// The string may be invalid if any fields are invalid, e.g, the vendor contains a non-compliant character.
 func (m Member) String() string {
 	if m.Tenant == "" {
 		return fmt.Sprintf("%s=%s", m.Vendor, m.Value)
@@ -36,8 +45,11 @@ func (m Member) String() string {
 	return fmt.Sprintf("%s@%s=%s", m.Vendor, m.Tenant, m.Value)
 }
 
+// TraceState represents a list of `Member`s that should be propagated to new spans started in a trace.
 type TraceState []Member
 
+// String encodes all `Member`s of the `TraceState` into a single string, formatted according to the W3C spec.
+// The string may be invalid if any `Member`s are invalid, e.g., containing a non-compliant character.
 func (ts TraceState) String() string {
 	var members []string
 	for _, member := range ts {
@@ -46,10 +58,14 @@ func (ts TraceState) String() string {
 	return strings.Join(members, ",")
 }
 
+// Parse attempts to decode a `TraceState` from a byte array.
+// It returns an error if the byte array is invalid, e.g., it contains an incorrectly formatted list member.
 func Parse(traceState []byte) (TraceState, error) {
 	return parse(string(traceState))
 }
 
+// ParseString attempts to decode a `TraceState` from a string.
+// It returns an error if the string is invalid, e.g., it contains an incorrectly formatted list member.
 func ParseString(traceState string) (TraceState, error) {
 	return parse(traceState)
 }
