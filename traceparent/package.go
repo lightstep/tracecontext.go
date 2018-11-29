@@ -9,8 +9,7 @@ import (
 )
 
 const (
-	Version    = 0
-	MaxVersion = 254
+	Version = 0
 )
 
 var (
@@ -21,6 +20,8 @@ var (
 )
 
 const (
+	maxVersion = 254
+
 	numVersionBytes = 1
 	numTraceIDBytes = 16
 	numSpanIDBytes  = 8
@@ -109,7 +110,7 @@ func parseVersion(b []byte) (uint8, error) {
 	if !ok {
 		return 0, ErrInvalidFormat
 	}
-	if version[0] > MaxVersion {
+	if version[0] > maxVersion {
 		return 0, ErrInvalidVersion
 	}
 	return version[0], nil
