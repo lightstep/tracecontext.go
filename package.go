@@ -28,7 +28,7 @@ type TraceContext struct {
 	TraceState  tracestate.TraceState
 }
 
-func FromHeader(headers http.Header) (TraceContext, error) {
+func FromHeaders(headers http.Header) (TraceContext, error) {
 	var tc TraceContext
 
 	h := textproto.MIMEHeader(headers)

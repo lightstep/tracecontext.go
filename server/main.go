@@ -34,7 +34,7 @@ func main() {
 		}
 
 		var tc tracecontext.TraceContext
-		if tc, err = tracecontext.FromHeader(req.Header); err != nil {
+		if tc, err = tracecontext.FromHeaders(req.Header); err != nil {
 			for i := 0; i < len(tc.TraceParent.TraceID); i++ {
 				tc.TraceParent.TraceID[i] = byte(rand.Intn(255))
 			}
